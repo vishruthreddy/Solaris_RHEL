@@ -15,11 +15,10 @@ pipeline {
         stage('Install Ansible') {
             steps {
                 sh '''
-                sudo yum install -y ansible
+                echo UKk~yYKqsZtv=g+x | sudo -S yum install -y ansible
                 '''
             }
         }
-
         stage('Run Ansible Playbook') {
             steps {
                 sh '''
