@@ -1,67 +1,53 @@
 ---
-- name: Install and Configure MySQL 5.7 on RHEL 9
+- name: Install MySQL 8.0 on RHEL 9
   hosts: n4
   become: yes
   vars:
     mysql_root_password: "Matilda@123"
-    solaris_mysql_host: "172.24.8.200"
-    solaris_mysql_user: "root"
-    solaris_mysql_password: "Matilda@123"
-    solaris_server_password: "Matilda@1234"
-    mysql_home_solaris: "/usr/bin"
-    dump_file: "/tmp/mysql_dump.sql"
+    mysql_version: "8.0"
 
   tasks:
-    - name: Install MySQL 5.7 Server on RHEL 9
+    - name: Install MySQL 8.0 repository
+      dnf:
+        name: https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
+        state: present
+
+    - name: Install MySQL 8.0 Server
       dnf:
         name: mysql-server
         state: present
-        disable_gpg_check: yes
 
-    - name: Start and Enable MySQL service on RHEL 9
+    - name: Start and Enable MySQL service
       systemd:
         name: mysqld
         state: started
         enabled: yes
 
-    - name: Set MySQL root password on RHEL 9
+    - name: Set MySQL root password
       mysql_user:
         name: root
         password: "{{ mysql_root_password }}"
         login_unix_socket: /var/lib/mysql/mysql.sock
-        priv: '*.*:ALL,GRANT'
         state: present
 
-    - name: Dump databases from Solaris MySQL 5.7
-      delegate_to: localhost
-      shell: >
-        sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }}
-        "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump 
-        -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases > {{ dump_file }}"
+    - name: Get the temporary MySQL root password
+      command: "grep 'temporary password' /var/log/mysqld.log"
+      register: mysql_root_temp_password
+      changed_when: false
 
-    - name: Copy dump file from Solaris to Jenkins
-      shell: >
-        sshpass -p "{{ solaris_server_password }}" scp root@{{ solaris_mysql_host }}:{{ dump_file }} /tmp/
-
-    - name: Copy dump file to RHEL
-      copy:
-        src: "/tmp/mysql_dump.sql"
-        dest: "{{ dump_file }}"
-
-    - name: Restore databases on RHEL MySQL
-      mysql_db:
-        name: all
-        state: import
-        target: "{{ dump_file }}"
+    - name: Secure MySQL installation
+      mysql_secure_installation:
         login_user: root
-        login_password: "{{ mysql_root_password }}"
+        login_password: "{{ mysql_root_temp_password.stdout.split(' ')[-1] }}"
+        root_password: "{{ mysql_root_password }}"
+        state: present
+        validate_password: no
+        remove_test_db: yes
+        disallow_empty_password: yes
+        change_root_password: yes
 
-    - name: Ensure MySQL users are replicated
-      shell: >
-        mysql -u root -p{{ mysql_root_password }} -e
-        "SELECT user, host FROM mysql.user;"
-      register: mysql_users
-
-    - name: Debug MySQL users replication
-      debug:
-        var: mysql_users.stdout_lines
+    - name: Ensure MySQL service is running
+      systemd:
+        name: mysqld
+        state: started
+        enabled: yes
