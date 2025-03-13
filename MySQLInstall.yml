@@ -1,0 +1,68 @@
+---
+- name: Install and Configure MySQL on RHEL 9
+  hosts: rhel_servers
+  become: yes
+  vars:
+    mysql_root_password: "Matilda@123"
+    solaris_mysql_host: "172.24.8.200"
+    solaris_mysql_user: "root"
+    solaris_mysql_password: "Matilda@123"
+    solaris_server_password: "Matilda@1234"
+    mysql_home_solaris: "/usr/bin"
+    dump_file: "/tmp/mysql_dump.sql"
+
+  tasks:
+    - name: Install MySQL dependencies on RHEL 9
+      dnf:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - mysql-server
+        - mysql
+
+    - name: Start and Enable MySQL service on RHEL 9
+      systemd:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Set MySQL root password on RHEL 9
+      mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        priv: '*.*:ALL,GRANT'
+        state: present
+
+    - name: Dump databases from Solaris MySQL 5.7
+      delegate_to: localhost
+      shell: >
+        sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }}
+        "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump 
+        -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases > {{ dump_file }}"
+
+    - name: Copy dump file from Solaris to Jenkins
+      shell: >
+        sshpass -p "{{ solaris_server_password }}" scp root@{{ solaris_mysql_host }}:{{ dump_file }} /tmp/
+
+    - name: Copy dump file to RHEL
+      copy:
+        src: "/tmp/mysql_dump.sql"
+        dest: "{{ dump_file }}"
+
+    - name: Restore databases on RHEL MySQL
+      mysql_db:
+        name: all
+        state: import
+        target: "{{ dump_file }}"
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Ensure MySQL users are replicated
+      shell: >
+        mysql -u root -p{{ mysql_root_password }} -e
+        "SELECT user, host FROM mysql.user;"
+      register: mysql_users
+
+    - debug:
+        var: mysql_users.stdout_lines
