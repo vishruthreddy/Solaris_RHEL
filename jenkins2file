@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+
+    environment {
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/vishruthreddy/Solaris_RHEL.git'
+            }
+        }
+
+        stage("Execute Ansible") {
+            steps {
+                ansiblePlaybook credentialsId: 'Ansible',
+                                 disableHostKeyChecking: true,
+                                 installation: 'Ansible',
+                                 inventory: 'inventory.ini',
+                                 playbook: 'MySQLInstall.yml'
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                sh '''
+                ansible-playbook -i inventory.ini MySQLInstall.yml
+                '''
+            }
+        }
+    }
+}
