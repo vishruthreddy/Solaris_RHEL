@@ -12,16 +12,17 @@ pipeline {
             }
         }
 
-        stage('Run Ansible Playbook') {
+        stage('Run Ansible Playbook with Jenkins Plugin') {
             steps {
                 ansiblePlaybook credentialsId: 'Ansible',
                                  disableHostKeyChecking: true,
                                  installation: 'Ansible',
                                  inventory: 'inventory.ini',
                                  playbook: 'MySQLInstall.yml'
-              }
-         }
- stage('Run Ansible Playbook') {
+            }
+        }
+
+        stage('Run Ansible Playbook via Shell') {
             steps {
                 sh '''
                 ansible-playbook -i inventory.ini MySQLInstall.yml
@@ -30,4 +31,3 @@ pipeline {
         }
     }
 }
-            
