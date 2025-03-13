@@ -12,14 +12,13 @@ pipeline {
             }
         }
 
-        stage('Verify SSH Connection') {
+        stage("Execute Ansible") {
             steps {
-                sh '''
-                echo "Verifying SSH connection to RHEL servers"
-                for server in $(awk '/ansible_host/ {print $2}' inventory.ini | cut -d= -f2); do
-                  ssh -o StrictHostKeyChecking=no -i /home/matilda-svc/.ssh/id_rsa matilda-svc@172.24.7.92 "echo Connection successful to $server"
-                done
-                '''
+                ansiblePlaybook credentialsId: 'Ansible',
+                                 disableHostKeyChecking: true,
+                                 installation: 'Ansible',
+                                 inventory: 'inventory.ini',
+                                 playbook: 'serviceaccount.yml'
             }
         }
 
