@@ -46,11 +46,11 @@
 
     # Secure MySQL installation on RHEL 9
     - name: Secure MySQL installation
-      mysql_secure_installation:
-        login_user: root
-        login_password: Matilda@123
-        password: Matilda@123
-        state: present
+  community.mysql.mysql_secure_installation:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    password: "{{ mysql_root_password }}"
+    state: present
 
     # Dump MySQL databases from Solaris server
     - name: Dump MySQL databases from Solaris server
