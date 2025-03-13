@@ -1,6 +1,6 @@
 ---
 - name: Install and Configure MySQL on RHEL 9
-  hosts: rhel_servers
+  hosts: n4
   become: yes
   vars:
     mysql_root_password: "Matilda@123"
