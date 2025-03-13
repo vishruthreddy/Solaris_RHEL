@@ -4,11 +4,11 @@
   become: yes
   tasks:
   
-    # Install MySQL 5.7 repository on RHEL 9
-    - name: Install MySQL 5.7 repository
-      yum:
-        name: https://dev.mysql.com/get/mysql57-community-release-el9-1.noarch.rpm
-        state: present
+    ### Install MySQL 5.7 repository on RHEL 9
+    #- name: Install MySQL 5.7 repository
+      #yum:
+        #name: https://dev.mysql.com/get/mysql57-community-release-el9-1.noarch.rpm
+#        state: present
 
     # Install MySQL 5.7
     - name: Install MySQL 5.7
