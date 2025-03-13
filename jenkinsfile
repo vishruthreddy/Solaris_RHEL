@@ -8,17 +8,10 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-             git branch: 'main', url: 'https://github.com/vishruthreddy/Solaris_RHEL.git'
+                git branch: 'main', url: 'https://github.com/vishruthreddy/Solaris_RHEL.git'
             }
         }
 
-        stage('Install Ansible') {
-            steps {
-                sh '''
-                echo UKk~yYKqsZtv=g+x | sudo -S yum install -y ansible
-                '''
-            }
-        }
         stage('Run Ansible Playbook') {
             steps {
                 sh '''
@@ -28,3 +21,4 @@ pipeline {
         }
     }
 }
+
