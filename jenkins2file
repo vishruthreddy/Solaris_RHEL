@@ -18,8 +18,14 @@ pipeline {
                                  disableHostKeyChecking: true,
                                  installation: 'Ansible',
                                  inventory: 'inventory.ini',
-                                 playbook: 'mysql_install.yml'
+                                 playbook: 'MySQLInstall.yml'
+ stage('Run Ansible Playbook') {
+            steps {
+                sh '''
+                ansible-playbook -i inventory.ini MySQLInstall.yml
+                '''
             }
         }
     }
 }
+            
