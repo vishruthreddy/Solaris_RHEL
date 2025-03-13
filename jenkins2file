@@ -1,89 +1,25 @@
----
-- name: Install and Configure MySQL 5.7 on RHEL 9 and Replicate Configuration from Solaris
-  hosts: all
-  become: yes
-  tasks:
-  
-    # Install MySQL 5.7 repository on RHEL 9
-    - name: Install MySQL 5.7 repository
-      yum:
-        name: https://dev.mysql.com/get/mysql57-community-release-el9-1.noarch.rpm
-        state: present
+pipeline {
+    agent any
 
-    # Install MySQL 5.7
-    - name: Install MySQL 5.7
-      yum:
-        name: mysql-community-server
-        state: present
+    environment {
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+    }
 
-    # Start MySQL service on RHEL 9
-    - name: Start MySQL service
-      service:
-        name: mysqld
-        state: started
-        enabled: yes
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/vishruthreddy/Solaris_RHEL.git'
+            }
+        }
 
-    # Get MySQL root password from the MySQL log
-    - name: Get MySQL temporary root password
-      shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'
-      register: mysql_root_password
-      changed_when: false
-
-    # Set the root password to Matilda@123
-    - name: Set MySQL root password on RHEL 9
-      mysql_user:
-        name: root
-        password: Matilda@123
-        host: localhost
-        state: present
-
-    # Disable MySQL temporary password validation
-    - name: Remove temporary password warning
-      mysql_variables:
-        name: validate_password
-        value: OFF
-        state: present
-
-    # Secure MySQL installation on RHEL 9
-    - name: Secure MySQL installation
-      mysql_secure_installation:
-        login_user: root
-        login_password: Matilda@123
-        password: Matilda@123
-        state: present
-
-    # Dump MySQL databases from Solaris server
-    - name: Dump MySQL databases from Solaris server
-      command: >
-        mysqldump --all-databases -u root -pMatilda@123 --host=172.24.8.200 --single-transaction --quick --lock-tables=false
-      register: mysql_dump
-      delegate_to: 172.24.8.200
-
-    # Copy the dumped databases to RHEL
-    - name: Copy MySQL dump from Solaris to RHEL
-      copy:
-        content: "{{ mysql_dump.stdout }}"
-        dest: "/tmp/mysql_dump.sql"
-
-    # Import the dumped databases into RHEL MySQL
-    - name: Import databases into MySQL on RHEL
-      mysql_db:
-        name: "{{ item }}"
-        state: import
-        target: /tmp/mysql_dump.sql
-      with_items: "{{ ansible_facts.packages['mysql-community-server'] }}"
-      when: mysql_dump.stdout is defined
-
-    # Set correct file permissions for MySQL on RHEL
-    - name: Ensure correct file permissions for MySQL dump
-      file:
-        path: "/tmp/mysql_dump.sql"
-        owner: mysql
-        group: mysql
-        mode: '0644'
-
-    # Clean up the MySQL dump file
-    - name: Clean up the MySQL dump file from RHEL
-      file:
-        path: "/tmp/mysql_dump.sql"
-        state: absent
+        stage('Run Ansible Playbook') {
+            steps {
+                ansiblePlaybook credentialsId: 'Ansible',
+                                 disableHostKeyChecking: true,
+                                 installation: 'Ansible',
+                                 inventory: 'inventory.ini',
+                                 playbook: 'mysql_install.yml'
+            }
+        }
+    }
+}
