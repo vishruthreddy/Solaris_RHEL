@@ -1,5 +1,5 @@
 ---
-- name: Install and Configure MySQL on RHEL 9
+- name: Install and Configure MySQL 5.7 on RHEL 9
   hosts: n4
   become: yes
   vars:
@@ -12,13 +12,11 @@
     dump_file: "/tmp/mysql_dump.sql"
 
   tasks:
-    - name: Install MySQL dependencies on RHEL 9
+    - name: Install MySQL 5.7 Server on RHEL 9
       dnf:
-        name: "{{ item }}"
+        name: mysql-server
         state: present
-      loop:
-        - mysql-server
-        - mysql
+        disable_gpg_check: yes
 
     - name: Start and Enable MySQL service on RHEL 9
       systemd:
@@ -64,5 +62,6 @@
         "SELECT user, host FROM mysql.user;"
       register: mysql_users
 
-    - debug:
+    - name: Debug MySQL users replication
+      debug:
         var: mysql_users.stdout_lines
