@@ -19,6 +19,8 @@ pipeline {
                                  installation: 'Ansible',
                                  inventory: 'inventory.ini',
                                  playbook: 'MySQLInstall.yml'
+              }
+         }
  stage('Run Ansible Playbook') {
             steps {
                 sh '''
