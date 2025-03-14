@@ -1,16 +1,16 @@
 ---
-- name: Install and Configure MySQL 8 on RHEL 9 and Replicate Configuration from Solaris
+- name: Install and Configure MySQL 8.4 on RHEL 9 and Migrate from Solaris 11 MySQL 5.7
   hosts: all
   become: yes
   tasks:
     # Install MySQL 8 repository on RHEL 9
     - name: Install MySQL 8 repository
       yum:
-        name: https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
+        name: https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
         state: present
 
-    # Install MySQL 8
-    - name: Install MySQL 8
+    # Install MySQL 8.4
+    - name: Install MySQL 8.4
       yum:
         name: mysql-community-server
         state: present
@@ -48,6 +48,31 @@
         query: "SET GLOBAL validate_password_policy = LOW;"
       ignore_errors: yes
 
+    # Create databases as per the Solaris MySQL 5.7 configuration
+    - name: Create MySQL databases (from Solaris 5.7 configuration)
+      community.mysql.mysql_db:
+        name: "{{ item }}"
+        state: present
+        login_user: root
+        login_password: Matilda@123
+      loop:
+        - database1
+        - database2
+        - database3
+
+    # Create MySQL users as per the Solaris MySQL 5.7 configuration
+    - name: Create MySQL users (from Solaris 5.7 configuration)
+      community.mysql.mysql_user:
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        priv: "{{ item.privileges }}"
+        state: present
+        login_user: root
+        login_password: Matilda@123
+      loop:
+        - { name: "user1", password: "password1", privileges: "ALL PRIVILEGES ON database1.*" }
+        - { name: "user2", password: "password2", privileges: "ALL PRIVILEGES ON database2.*" }
+
 - name: Secure MySQL installation manually
   hosts: all
   become: yes
@@ -79,7 +104,7 @@
         login_user: root
         login_password: Matilda@123
 
-- name: Dump and Restore MySQL Databases from Solaris to RHEL (MySQL 5.7 to MySQL 8)
+- name: Dump and Restore MySQL Databases from Solaris 5.7 to RHEL 8.4
   hosts: localhost
   tasks:
     - name: Dump MySQL databases from Solaris server
@@ -94,8 +119,8 @@
         src: /tmp/mysql_dump.sql
         dest: /tmp/mysql_dump.sql
 
-    # Import the dumped databases into MySQL on RHEL (MySQL 8)
-    - name: Import databases into MySQL 8 on RHEL
+    # Import the dumped databases into MySQL 8.4 on RHEL
+    - name: Import databases into MySQL 8.4 on RHEL
       community.mysql.mysql_db:
         login_user: root
         login_password: Matilda@123
