@@ -53,11 +53,11 @@
     state: present
 
     # Dump MySQL databases from Solaris server
-    - name: Dump MySQL databases from Solaris server
-      command: >
-        mysqldump --all-databases -u root -pMatilda@123 --host=172.24.8.200 --single-transaction --quick --lock-tables=false
-      register: mysql_dump
-      delegate_to: 172.24.8.200
+- name: Dump MySQL databases from Solaris server
+  delegate_to: localhost
+  shell: >
+    sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }} 
+    "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases --single-transaction --quick --lock-tables=false > {{ dump_file }}"
 
     # Copy the dumped databases to RHEL
     - name: Copy MySQL dump from Solaris to RHEL
