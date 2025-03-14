@@ -4,9 +4,9 @@
   become: yes
   tasks:
     # Install MySQL 8 repository on RHEL 9
-    - name: Install MySQL 8 repository
-      yum:
-        name: https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
+    - name: Install MySQL 8.4 repository
+      ansible.builtin.yum:
+        name: /etc/yum.repos.d/mysql84-community-release-el9-1.noarch.rpm
         state: present
 
     # Install MySQL 8.4
@@ -103,41 +103,3 @@
         query: "FLUSH PRIVILEGES;"
         login_user: root
         login_password: Matilda@123
-
-- name: Dump and Restore MySQL Databases from Solaris 5.7 to RHEL 8.4
-  hosts: localhost
-  tasks:
-    - name: Dump MySQL databases from Solaris server
-      shell: >
-        sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }} \
-        "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases --single-transaction --quick --lock-tables=false > /tmp/mysql_dump.sql"
-      delegate_to: localhost
-
-    # Copy the dumped databases to RHEL
-    - name: Copy MySQL dump from Solaris to RHEL
-      copy:
-        src: /tmp/mysql_dump.sql
-        dest: /tmp/mysql_dump.sql
-
-    # Import the dumped databases into MySQL 8.4 on RHEL
-    - name: Import databases into MySQL 8.4 on RHEL
-      community.mysql.mysql_db:
-        login_user: root
-        login_password: Matilda@123
-        state: import
-        target: /tmp/mysql_dump.sql
-      ignore_errors: yes
-
-    # Set correct file permissions for MySQL on RHEL
-    - name: Ensure correct file permissions for MySQL dump
-      file:
-        path: /tmp/mysql_dump.sql
-        owner: mysql
-        group: mysql
-        mode: '0644'
-
-    # Clean up the MySQL dump file
-    - name: Clean up the MySQL dump file from RHEL
-      file:
-        path: /tmp/mysql_dump.sql
-        state: absent
