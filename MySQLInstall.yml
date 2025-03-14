@@ -1,6 +1,6 @@
 ---
 - name: Install and Configure MySQL 8.4 on RHEL 9 and Migrate from Solaris 11 MySQL 5.7
-  hosts: all
+  hosts: n4
   become: yes
   tasks:
     # Install MySQL 8 repository on RHEL 9
