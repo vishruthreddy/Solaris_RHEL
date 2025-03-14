@@ -3,7 +3,6 @@
   hosts: all
   become: yes
   tasks:
-  
     # Install MySQL 5.7 repository on RHEL 9
     - name: Install MySQL 5.7 repository
       yum:
@@ -49,24 +48,43 @@
         query: "SET GLOBAL validate_password_policy = LOW;"
       ignore_errors: yes
 
-    # Secure MySQL installation
-    - name: Secure MySQL installation
-      community.mysql.mysql_secure_installation:
+- name: Secure MySQL installation manually
+  hosts: all
+  become: yes
+  tasks:
+    - name: Remove anonymous users
+      community.mysql.mysql_user:
+        name: ""
+        host_all: yes
+        state: absent
         login_user: root
         login_password: Matilda@123
-        new_password: Matilda@123
-        change_root_password: false
-        remove_anonymous_users: true
-        disallow_root_login_remotely: true
-        remove_test_db: true
-      ignore_errors: yes
 
-- name: Dump MySQL databases from Solaris server
+    - name: Disallow root login remotely
+      community.mysql.mysql_query:
+        query: "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+        login_user: root
+        login_password: Matilda@123
+
+    - name: Remove test database
+      community.mysql.mysql_db:
+        name: test
+        state: absent
+        login_user: root
+        login_password: Matilda@123
+
+    - name: Flush privileges
+      community.mysql.mysql_query:
+        query: "FLUSH PRIVILEGES;"
+        login_user: root
+        login_password: Matilda@123
+
+- name: Dump and Restore MySQL Databases from Solaris to RHEL
   hosts: localhost
   tasks:
     - name: Dump MySQL databases from Solaris server
       shell: >
-        sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }} 
+        sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }} \
         "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases --single-transaction --quick --lock-tables=false > /tmp/mysql_dump.sql"
       delegate_to: localhost
 
@@ -74,7 +92,7 @@
     - name: Copy MySQL dump from Solaris to RHEL
       copy:
         src: /tmp/mysql_dump.sql
-        dest: "/tmp/mysql_dump.sql"
+        dest: /tmp/mysql_dump.sql
 
     # Import the dumped databases into MySQL on RHEL
     - name: Import databases into MySQL on RHEL
@@ -88,7 +106,7 @@
     # Set correct file permissions for MySQL on RHEL
     - name: Ensure correct file permissions for MySQL dump
       file:
-        path: "/tmp/mysql_dump.sql"
+        path: /tmp/mysql_dump.sql
         owner: mysql
         group: mysql
         mode: '0644'
@@ -96,5 +114,5 @@
     # Clean up the MySQL dump file
     - name: Clean up the MySQL dump file from RHEL
       file:
-        path: "/tmp/mysql_dump.sql"
+        path: /tmp/mysql_dump.sql
         state: absent
