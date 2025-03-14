@@ -34,50 +34,7 @@
         -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Matilda@123';"
       ignore_errors: yes
 
-    # Set the root password to Matilda@123
-    - name: Set MySQL root password on RHEL 9
-      community.mysql.mysql_user:
-        name: root
-        password: Matilda@123
-        login_user: root
-        login_password: "{{ mysql_root_password.stdout }}"
-        host: localhost
-        state: present
-      ignore_errors: yes
-
-    # Disable MySQL password validation
-    - name: Disable password validation
-      community.mysql.mysql_query:
-        login_user: root
-        login_password: Matilda@123
-        query: "SET GLOBAL validate_password_policy = LOW;"
-      ignore_errors: yes
-
-    # Create databases as per the Solaris MySQL 5.7 configuration
-    - name: Create MySQL databases (from Solaris 5.7 configuration)
-      community.mysql.mysql_db:
-        name: "{{ item }}"
-        state: present
-        login_user: root
-        login_password: Matilda@123
-      loop:
-        - database1
-        - database2
-        - database3
-
-    # Create MySQL users as per the Solaris MySQL 5.7 configuration
-    - name: Create MySQL users (from Solaris 5.7 configuration)
-      community.mysql.mysql_user:
-        name: "{{ item.name }}"
-        password: "{{ item.password }}"
-        priv: "{{ item.privileges }}"
-        state: present
-        login_user: root
-        login_password: Matilda@123
-      loop:
-        - { name: "user1", password: "password1", privileges: "ALL PRIVILEGES ON database1.*" }
-        - { name: "user2", password: "password2", privileges: "ALL PRIVILEGES ON database2.*" }
-
+    
 - name: Secure MySQL installation manually
   hosts: all
   become: yes
