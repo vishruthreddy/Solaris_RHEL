@@ -36,7 +36,7 @@
 
     
 - name: Secure MySQL installation manually
-  hosts: all
+  hosts: n4
   become: yes
   tasks:
 
