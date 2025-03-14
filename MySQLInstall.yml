@@ -27,6 +27,11 @@
       shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'
       register: mysql_root_password
       changed_when: false
+    - name: Reset MySQL root password (handle expired password)
+  shell: |
+    mysql --connect-expired-password -u root -p{{ mysql_root_password.stdout }} \
+    -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Matilda@123';"
+  ignore_errors: yes
 
     # Set the root password to Matilda@123
     - name: Set MySQL root password on RHEL 9
