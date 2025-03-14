@@ -4,7 +4,7 @@
   become: yes
   tasks:
   
-    #Install MySQL 5.7 repository on RHEL 9
+    # Install MySQL 5.7 repository on RHEL 9
     - name: Install MySQL 5.7 repository
       yum:
         name: https://dev.mysql.com/get/mysql57-community-release-el9-1.noarch.rpm
@@ -31,48 +31,59 @@
 
     # Set the root password to Matilda@123
     - name: Set MySQL root password on RHEL 9
-      mysql_user:
+      community.mysql.mysql_user:
         name: root
         password: Matilda@123
+        login_user: root
+        login_password: "{{ mysql_root_password.stdout }}"
         host: localhost
         state: present
+        authentication_plugin: mysql_native_password
+      ignore_errors: yes
 
-    # Disable MySQL temporary password validation
-    - name: Remove temporary password warning
-      mysql_variables:
-        name: validate_password
-        value: OFF
-        state: present
+    # Disable MySQL password validation
+    - name: Disable password validation
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: Matilda@123
+        query: "SET GLOBAL validate_password_policy = LOW;"
+      ignore_errors: yes
 
-    # Secure MySQL installation on RHEL 9
+    # Secure MySQL installation
     - name: Secure MySQL installation
-  community.mysql.mysql_secure_installation:
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    password: "{{ mysql_root_password }}"
-    state: present
+      community.mysql.mysql_secure_installation:
+        login_user: root
+        login_password: Matilda@123
+        new_password: Matilda@123
+        change_root_password: false
+        remove_anonymous_users: true
+        disallow_root_login_remotely: true
+        remove_test_db: true
+      ignore_errors: yes
 
-    # Dump MySQL databases from Solaris server
 - name: Dump MySQL databases from Solaris server
-  delegate_to: localhost
-  shell: >
-    sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }} 
-    "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases --single-transaction --quick --lock-tables=false > {{ dump_file }}"
+  hosts: localhost
+  tasks:
+    - name: Dump MySQL databases from Solaris server
+      shell: >
+        sshpass -p "{{ solaris_server_password }}" ssh root@{{ solaris_mysql_host }} 
+        "MYSQL_HOME={{ mysql_home_solaris }} {{ mysql_home_solaris }}/mysqldump -u {{ solaris_mysql_user }} -p{{ solaris_mysql_password }} --all-databases --single-transaction --quick --lock-tables=false > /tmp/mysql_dump.sql"
+      delegate_to: localhost
 
     # Copy the dumped databases to RHEL
     - name: Copy MySQL dump from Solaris to RHEL
       copy:
-        content: "{{ mysql_dump.stdout }}"
+        src: /tmp/mysql_dump.sql
         dest: "/tmp/mysql_dump.sql"
 
-    # Import the dumped databases into RHEL MySQL
+    # Import the dumped databases into MySQL on RHEL
     - name: Import databases into MySQL on RHEL
-      mysql_db:
-        name: "{{ item }}"
+      community.mysql.mysql_db:
+        login_user: root
+        login_password: Matilda@123
         state: import
         target: /tmp/mysql_dump.sql
-      with_items: "{{ ansible_facts.packages['mysql-community-server'] }}"
-      when: mysql_dump.stdout is defined
+      ignore_errors: yes
 
     # Set correct file permissions for MySQL on RHEL
     - name: Ensure correct file permissions for MySQL dump
