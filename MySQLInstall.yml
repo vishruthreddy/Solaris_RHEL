@@ -1,16 +1,16 @@
 ---
-- name: Install and Configure MySQL 5.7 on RHEL 9 and Replicate Configuration from Solaris
+- name: Install and Configure MySQL 8 on RHEL 9 and Replicate Configuration from Solaris
   hosts: all
   become: yes
   tasks:
-    # Install MySQL 5.7 repository on RHEL 9
-    - name: Install MySQL 5.7 repository
+    # Install MySQL 8 repository on RHEL 9
+    - name: Install MySQL 8 repository
       yum:
-        name: https://dev.mysql.com/get/mysql57-community-release-el9-1.noarch.rpm
+        name: https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
         state: present
 
-    # Install MySQL 5.7
-    - name: Install MySQL 5.7
+    # Install MySQL 8
+    - name: Install MySQL 8
       yum:
         name: mysql-community-server
         state: present
@@ -79,7 +79,7 @@
         login_user: root
         login_password: Matilda@123
 
-- name: Dump and Restore MySQL Databases from Solaris to RHEL
+- name: Dump and Restore MySQL Databases from Solaris to RHEL (MySQL 5.7 to MySQL 8)
   hosts: localhost
   tasks:
     - name: Dump MySQL databases from Solaris server
@@ -94,8 +94,8 @@
         src: /tmp/mysql_dump.sql
         dest: /tmp/mysql_dump.sql
 
-    # Import the dumped databases into MySQL on RHEL
-    - name: Import databases into MySQL on RHEL
+    # Import the dumped databases into MySQL on RHEL (MySQL 8)
+    - name: Import databases into MySQL 8 on RHEL
       community.mysql.mysql_db:
         login_user: root
         login_password: Matilda@123
